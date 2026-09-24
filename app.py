@@ -25,6 +25,7 @@ SUBJECTS = [
     "Математика",
     "Қазақстан тарихы",
     "Оқу сауаттылығы",
+    "Математикалық сауаттылық",
     "Физика",
     "Химия",
     "Биология",
@@ -37,8 +38,36 @@ SUBJECTS = [
     "Адам. Қоғам. Құқық"
 ]
 
-# ҰБТ форматындағы негізгі режим
-MAX_TEST_QUESTIONS = 140
+# Әр пәндегі тест сұрақтарының саны
+QUESTION_LIMITS = {
+    "Қазақстан тарихы": 20,
+    "Оқу сауаттылығы": 10,
+    "Математикалық сауаттылық": 10,
+    "Математика": 40,
+    "Информатика": 40,
+    "Биология": 40,
+    "Химия": 40,
+    "Физика": 40,
+    "География": 40,
+    "Қазақ тілі": 40,
+    "Қазақ әдебиеті": 40,
+    "Ағылшын тілі": 40,
+    "Дүниежүзі тарихы": 40,
+    "Адам. Қоғам. Құқық": 40,
+}
+
+# Қалған негізгі пәндер: 50 сұрақ
+DEFAULT_QUESTION_LIMIT = 50
+
+# Максималды балл
+# Негізгі пәндер: 40 сұрақ = 50 балл
+POINT_TOTALS = {
+    "Математика": 50,
+    "Информатика": 50,
+    "Қазақстан тарихы": 20,
+    "Оқу сауаттылығы": 10,
+    "Математикалық сауаттылық": 10,
+}
 
 # 3 сағат 50 минут
 TEST_TIME_SECONDS = 3 * 60 * 60 + 50 * 60
@@ -792,6 +821,32 @@ def analyze_result(score, total):
         )
 
 
+def get_question_limit(subject):
+    return QUESTION_LIMITS.get(
+        subject,
+        DEFAULT_QUESTION_LIMIT
+    )
+
+
+def get_max_points(subject, total_questions):
+    if subject in (
+        "Математика",
+        "Информатика",
+        "Биология",
+        "Химия",
+        "Физика",
+        "География",
+        "Қазақ тілі",
+        "Қазақ әдебиеті",
+        "Ағылшын тілі",
+        "Дүниежүзі тарихы",
+        "Адам. Қоғам. Құқық",
+    ):
+        return total_questions * 50 / 40
+
+    return total_questions
+
+
 def create_test(subject):
 
     all_questions = (
@@ -801,7 +856,9 @@ def create_test(subject):
         )
     )
 
-    if len(all_questions) <= MAX_TEST_QUESTIONS:
+    question_limit = get_question_limit(subject)
+
+    if len(all_questions) <= question_limit:
 
         selected = all_questions.copy()
 
@@ -809,7 +866,7 @@ def create_test(subject):
 
         selected = random.sample(
             all_questions,
-            MAX_TEST_QUESTIONS
+            question_limit
         )
 
     random.shuffle(selected)
@@ -1605,8 +1662,8 @@ if role == "director":
                         ),
 
                     "Ұпай":
-                        f"{r.get('score', 0)} / "
-                        f"{r.get('total', 0)}",
+                        f"{r.get('points', r.get('score', 0)):g} / "
+                        f"{r.get('max_points', r.get('total', 0)):g}",
 
                     "Пайыз":
                         f"{r.get('percent', 0):.1f}%",
@@ -2054,7 +2111,7 @@ elif role == "student":
             )
 
             if st.button(
-                "🚀 140 форматындағы тестті бастау",
+                "🚀 Тестті бастау",
                 use_container_width=True
             ):
 
@@ -2145,7 +2202,7 @@ elif role == "student":
                 f"{len(st.session_state.test_answers)} / {total}"
             )
 
-            # 140 QUESTION NAVIGATION
+            # QUESTION NAVIGATION
 
             st.markdown(
                 "### 🔢 Сұрақтар"
@@ -2311,6 +2368,13 @@ elif role == "student":
 
                 score = 0
 
+                max_points = get_max_points(
+                    subject,
+                    total
+                )
+
+                points = 0
+
                 review_data = []
 
                 for i, q in enumerate(
@@ -2381,6 +2445,24 @@ elif role == "student":
                     100
                 ) if total else 0
 
+                # Балл есептеу
+                if subject in (
+        "Математика",
+        "Информатика",
+        "Биология",
+        "Химия",
+        "Физика",
+        "География",
+        "Қазақ тілі",
+        "Қазақ әдебиеті",
+        "Ағылшын тілі",
+        "Дүниежүзі тарихы",
+        "Адам. Қоғам. Құқық",
+    ):
+                    points = score * 50 / 40
+                else:
+                    points = score
+
                 # XP
 
                 earned_xp = (
@@ -2412,6 +2494,12 @@ elif role == "student":
                     "total":
                         total,
 
+                    "points":
+                        points,
+
+                    "max_points":
+                        max_points,
+
                     "percent":
                         percent,
 
@@ -2439,7 +2527,7 @@ elif role == "student":
                         subject,
 
                     "score":
-                        f"{score} / {total}",
+                        f"{points:g} / {max_points:g}",
 
                     "percent":
                         percent,
@@ -2667,9 +2755,9 @@ elif role == "student":
                         <br>
 
                         🎯
-                        {r.get('score', 0)}
+                        {r.get('points', r.get('score', 0)):g}
                         /
-                        {r.get('total', 0)}
+                        {r.get('max_points', r.get('total', 0)):g}
 
                         —
 
